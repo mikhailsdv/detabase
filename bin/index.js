@@ -3,10 +3,8 @@
 
 const {displayError} = require("../lib/utils")
 
-const program = require("../lib/program.js")
+const program = require("../lib/program.js").exitOverride()
 
 try {
 	program.parse()
-} catch (err) {
-	displayError(err)
-}
+} catch (err) {}
