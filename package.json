@@ -1,10 +1,11 @@
 {
-  "name": "detabase",
+  "name": "@mikhailsdv/detabase",
+  "programName": "detabase",
   "version": "1.1.2",
   "description": "CLI for Deta Base.",
   "main": "./lib/program.js",
   "bin": {
-    "detabase": "./bin/index.js"
+    "detabase": "bin/index.js"
   },
   "author": "https://github.com/mikhailsdv",
   "dependencies": {
@@ -14,5 +15,25 @@
     "sanitize-filename": "^1.6.3"
   },
   "preferGlobal": true,
-  "license": "MIT"
+  "license": "MIT",
+  "directories": {
+    "lib": "lib"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikhailsdv/detabase.git"
+  },
+  "keywords": [
+    "deta",
+    "deta-base",
+    "cli"
+  ],
+  "bugs": {
+    "url": "https://github.com/mikhailsdv/detabase/issues"
+  },
+  "homepage": "https://github.com/mikhailsdv/detabase#readme"
 }
