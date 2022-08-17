@@ -7,10 +7,10 @@
 -   Query, get, put, insert, delete, update items.
 -   Export databases with or without a specific query.
 -   Print databases in the table or json view.
--   Put or insert data from command line of from file.
--   Delete and update multiple items with a query.
+-   Put or insert data from command line or from file.
+-   Delete or update multiple items with a query.
 -   Truncate databases.
--   Create an empty databases.
+-   Create empty databases.
 -   Count items in database.
 
 ## Usage
@@ -48,13 +48,13 @@ Commands:
   help [command]                         Display help for command.
 ```
 
-First thing you need to di is to set your Deta project key by running:
+First thing you need to do is to set your Deta project key by running:
 
 ```sh
 detabase auth your_project_key
 ```
 
-From now you can run any command. Note that this project uses Deta's syntax for querying, so whenever you see `<query>` it expects you to use queries as described [here](https://docs.deta.sh/docs/base/http#query-items).
+From now, you can run any command. Note that this project uses Deta's syntax for querying, so whenever you see `<query>` it expects you to use queries as described [here](https://docs.deta.sh/docs/base/http#query-items).
 
 ## Available commands
 
@@ -72,14 +72,14 @@ From now you can run any command. Note that this project uses Deta's syntax for 
 
 ## export
 
-#Syntax
+**Syntax:**
 
 ```sh
 detabase export <database> -q <query> -li <limit> -la <last> -fn <filename>
 detabase export <database> --query <query> --limit <limit> --last <last> -filename <filename>
 ```
 
-#Examples
+**Examples:**
 
 ```sh
 # Export the whole database `users`
@@ -95,14 +95,14 @@ detabase export users -q "{'age?gt': 18}" -
 
 ## insert
 
-#Syntax
+**Syntax:**
 
 ```sh
 detabase insert <database> -i <items> -ff <from-file>
 detabase insert <database> --items <items> --from-file <from-file>
 ```
 
-#Examples
+**Examples:**
 
 ```sh
 # Insert an item to database `users`
@@ -117,14 +117,14 @@ detabase insert users -ff "./some/path/data_to_insert.json"
 
 ## put
 
-#Syntax
+**Syntax:**
 
 ```sh
 detabase put <database> -i <items> -ff <from-file>
 detabase put <database> --items <items> --from-file <from-file>
 ```
 
-#Examples
+**Examples:**
 
 ```sh
 # Insert an item to database `users`
@@ -139,14 +139,14 @@ detabase put users -ff "./some/path/data_to_insert.json"
 
 ## delete
 
-#Syntax
+**Syntax:**
 
 ```sh
 detabase delete <database> -q <query>
 detabase delete <database> --query <query>
 ```
 
-#Examples
+**Examples:**
 
 ```sh
 # Delete an item from `users` with the key "csn9weej2"
@@ -158,14 +158,14 @@ detabase delete users -q "{name: 'Jack'}"
 
 ## update
 
-#Syntax
+**Syntax:**
 
 ```sh
 detabase update <database> -q <query> -s <object> -i <object> -a <object> -p <object> -d <string, array>
 detabase update <database> --query <query> --set <object> --increment <object> --append <object> --prepend <object> --delete <string, array>
 ```
 
-#Examples
+**Examples:**
 
 ```sh
 # Update an item from `users` with the key "csn9weej2", set name to "Hanna"
@@ -177,14 +177,14 @@ detabase update users -q "{age: 18}" --increment "{age: 1}"
 
 ## query
 
-#Syntax
+**Syntax:**
 
 ```sh
 detabase query <database> -q <query> -li <limit> -la <last> -j
 detabase query <database> --query <query> --limit <limit> --last <last> --json
 ```
 
-#Examples
+**Examples:**
 
 ```sh
 # Show all items from `users`
@@ -199,13 +199,13 @@ detabase query users -q "{age: 18}" -j
 
 ## create
 
-#Syntax
+**Syntax:**
 
 ```sh
 detabase create <database>
 ```
 
-#Examples
+**Examples:**
 
 ```sh
 # Create a database named `new_db`
@@ -214,14 +214,14 @@ detabase create new_db
 
 ## clone
 
-#Syntax
+**Syntax:**
 
 ```sh
 detabase clone <database> <new-name> -q <query> -f
 detabase clone <database> <new-name> --query <query> --force
 ```
 
-#Examples
+**Examples:**
 
 ```sh
 # Clone `some_db` into `new_db`
@@ -233,13 +233,13 @@ detabase clone some_db existing_db --force
 
 ## get
 
-#Syntax
+**Syntax:**
 
 ```sh
 detabase get <database> <key>
 ```
 
-#Examples
+**Examples:**
 
 ```sh
 # Get an item with key "csn9weej2" from `users` database
@@ -248,13 +248,13 @@ detabase get users csn9weej2
 
 ## truncate
 
-#Syntax
+**Syntax:**
 
 ```sh
 detabase truncate <database>
 ```
 
-#Examples
+**Examples:**
 
 ```sh
 # Remove all the items from `users` database
@@ -263,14 +263,14 @@ detabase truncate users
 
 ## count
 
-#Syntax
+**Syntax:**
 
 ```sh
 detabase count <database> -q <query>
 detabase count <database> --query <query>
 ```
 
-#Examples
+**Examples:**
 
 ```sh
 # Count items of `users` database
