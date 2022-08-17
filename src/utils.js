@@ -56,4 +56,20 @@ const benchmark = () => {
 	return () => Math.round((new Date().valueOf() - start) * 10) / 10000
 }
 
-module.exports = {printTable, arrayChop, jsonStringify, getFileTimestamp, parseQuery, benchmark}
+const reduceAsync = async (arr, f, acc) => {
+	let counter = 0
+	for (const item of arr) {
+		acc = await f(item, counter, acc)
+	}
+	return acc
+}
+
+module.exports = {
+	printTable,
+	arrayChop,
+	jsonStringify,
+	getFileTimestamp,
+	parseQuery,
+	benchmark,
+	reduceAsync,
+}

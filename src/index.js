@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 "use strict"
 
+//update multiple
+//insert
+//update
+//get
+
 const fs = require("fs")
 const path = require("path")
-const axios = require("axios")
 const sanitizeFilename = require("sanitize-filename")
 const {program} = require("commander")
 const {
@@ -13,78 +17,23 @@ const {
 	getFileTimestamp,
 	parseQuery,
 	benchmark,
+	reduceAsync,
 } = require("./utils")
 const {version} = require("../package.json")
+const DetaApi = require("./api")
+const Auth = require("./auth")
 
-const configFilePath = path.resolve("./config.json")
-const config = {}
-if (process.argv[2] !== "auth") {
-	if (!fs.existsSync(configFilePath)) {
-		return console.error("Unauthorized. Auth with the command `detabase auth <project-key>`.")
-	}
-	try {
-		Object.assign(config, JSON.parse(fs.readFileSync(configFilePath).toString()))
-		config.projectId = config.projectKey.split("_")[0]
-	} catch (err) {
-		return console.error(
-			"Can't parse congif.json. Try to auth again with the command `detabase auth <project-key>`",
-			err
-		)
-	}
-}
+const auth = new Auth()
+const detaApi = new DetaApi({projectKey: auth.projectKey})
 
-const request = axios.create({
-	baseURL: `https://database.deta.sh/v1/${config.projectId}`,
-	timeout: 30000,
-	headers: {"X-API-Key": config.projectKey},
-})
-
-const Put = async ({database, items}) => {
-	try {
-		const response = await request({
-			method: "PUT",
-			url: `/${encodeURIComponent(database)}/items`,
-			data: {items},
-		})
-		return response.data
-	} catch (err) {
-		console.error(err?.response?.data)
-		return null
-	}
-}
-
-const Delete = async ({database, key}) => {
-	try {
-		const response = await request({
-			method: "DELETE",
-			url: `/${encodeURIComponent(database)}/items/${encodeURIComponent(key)}`,
-		})
-		return response.data
-	} catch (err) {
-		console.error(err?.response?.data)
-		return null
-	}
-}
-
-const Query = async ({database, query, limit, last}) => {
-	query = parseQuery(query)
-	query === undefined &&
-		console.warn(
-			"Invalid query. The query will be skipped. Please, read the docs here https://docs.deta.sh/docs/base/queries/ and here https://docs.deta.sh/docs/base/http#query-items"
-		)
-	const {data} = await request({
-		method: "POST",
-		url: `/${encodeURIComponent(database)}/query`,
-		data: {
-			query,
-			limit,
-			last,
-		},
+program
+	.name("detabase")
+	.version(version, "-v, --version", "Output the current version.")
+	.helpOption("-h, --help", "Read more information.")
+	.addHelpCommand("help [command]", "Display help for command.")
+	.configureOutput({
+		outputError: (str, write) => console.error(str),
 	})
-	return data
-}
-
-program.version(version, "-v, --version", "Output the current version.")
 
 program
 	.command("export")
@@ -97,9 +46,10 @@ program
 	.option("-la, --last <last>", "Last key seen in a previous paginated response.")
 	.option("-fn, --filename <filename>", "Specify own name if a .json file.")
 	.action(async (database, {filename, ...options}) => {
+		auth.checkAuth()
 		console.log("Exporting database...")
 		const timer = benchmark()
-		const data = await Query({database, ...options})
+		const data = await detaApi.query({database, ...options})
 		if (!data.paging.size) {
 			return console.log("Nothing to export. Aborting...")
 		}
@@ -108,7 +58,7 @@ program
 			? sanitizeFilename(filename)
 			: `./${database}_${getFileTimestamp()}.json`
 		fs.writeFileSync(fileName, jsonStringify(data))
-		console.log(`Succesfuly exported into ${fileName}!`)
+		console.log(`Succesfuly exported into ${fileName}.`)
 		console.log(`Export took ${timer()} seconds.`)
 	})
 
@@ -118,12 +68,54 @@ program
 	.argument("<database>", "Name of your database.")
 	.option("-q, --query <query>", "Specify a query to export.")
 	.action(async (database, options) => {
+		auth.checkAuth()
 		console.log("Counting...")
 		const timer = benchmark()
-		const data = await Query({database, ...options})
+		const data = await detaApi.query({database, ...options})
 		console.log(
 			`There are ${data.paging.size} items${options.query ? " matching the query" : ""}.`
 		)
+		console.log(`Query took ${timer()} seconds.`)
+	})
+
+program
+	.command("clone")
+	.description("Clone database.")
+	.argument("<database>", "Database to clone.")
+	.argument("<new-name>", "Name of the new database.")
+	.option("-q, --query <query>", "Specify a query.")
+	.option("-f, --forse", "Clone even if a database with the new name already exist.", false)
+	.action(async (database, newName, options) => {
+		auth.checkAuth()
+		const timer = benchmark()
+		const data = await detaApi.query({database, ...options})
+		console.log(
+			`Cloning ${data.paging.size} items${
+				options.query ? " matching the query" : ""
+			} from "${database} into "${newName}".`
+		)
+
+		const partLength = 25
+		const parts = arrayChop(data.items, partLength)
+		const results = await reduceAsync(
+			parts,
+			async (part, counter, acc) => {
+				console.log(
+					"Putting...",
+					`${counter * partLength + part.length}/${data.items.length}`
+				)
+				try {
+					const response = await detaApi.put({database: newName, items: part})
+					return acc.concat(...response.processed.items)
+				} catch (err) {
+					console.error(err?.response?.data)
+					return acc
+				}
+			},
+			[]
+		)
+
+		console.log(`Succesfuly put ${data.items.length} items into "${newName}".`)
 		console.log(`Query took ${timer()} seconds.`)
 	})
 
@@ -139,6 +131,7 @@ program
 		"Provide a path to file containing JSON-encoded array of items instead."
 	)
 	.action(async (database, {items, fromFile}) => {
+		auth.checkAuth()
 		const itemsToPut = []
 		if (items) {
 			const itemsFromCommandLine = parseQuery(items)
@@ -174,19 +167,25 @@ program
 		console.log(`Staring to put ${itemsToPut.length} items...`)
 		const timer = benchmark()
 
-		const parts = arrayChop(itemsToPut, 25)
-		let counter = 0
-		const results = []
-		for (const part of parts) {
-			counter += part.length
-			console.log("Putting...", `${counter}/${itemsToPut.length}`)
-			try {
-				const response = await Put({database, items: part})
-				results.push(...response.processed.items)
-			} catch (err) {
-				console.error(response?.response?.data)
-			}
-		}
+		const partLength = 25
+		const parts = arrayChop(itemsToPut, partLength)
+		const results = await reduceAsync(
+			parts,
+			async (part, counter, acc) => {
+				console.log(
+					"Putting...",
+					`${counter * partLength + part.length}/${itemsToPut.length}`
+				)
+				try {
+					const response = await detaApi.put({database, items: part})
+					return acc.concat(...response.processed.items)
+				} catch (err) {
+					console.error(err?.response?.data)
+					return acc
+				}
+			},
+			[]
+		)
 
 		console.log(`Succesfuly put ${results.length} items.`)
 		console.log(`Query took ${timer()} seconds.`)
@@ -197,16 +196,17 @@ program
 	.description("Creates a database.")
 	.argument("<database>", "Give a name to youe database.")
 	.action(async database => {
+		auth.checkAuth()
 		const timer = benchmark()
 		try {
-			const data = await Query({database, limit: 1})
+			const data = await detaApi.query({database, limit: 1})
 			if (data.paging.size !== 0) {
 				return console.error(`Database "${database}" already exists. Aborting...`)
 			}
 			console.log("Creating new database...")
-			const response = await Put({database, items: [{create: 1}]})
-			await Delete({database, key: response.processed.items[0].key})
-			console.log(`Succesfuly created the database "${database}"!`)
+			const response = await detaApi.put({database, items: [{create: 1}]})
+			await detaApi.delete({database, key: response.processed.items[0].key})
+			console.log(`Succesfuly created the database "${database}".`)
 			console.log(`Process took ${timer()} seconds.`)
 		} catch (err) {
 			console.log(err)
@@ -218,20 +218,25 @@ program
 	.description("Turncates a database.")
 	.argument("<database>", "Name of a database to turncate.")
 	.action(async database => {
+		auth.checkAuth()
 		const timer = benchmark()
 		try {
-			const data = await Query({database})
+			const data = await detaApi.query({database})
 			if (!data.paging.size) {
 				return console.error(`The database is already empty. Aborting...`)
 			}
 			console.log("Trying to turncate the database...")
-			let counter = 0
-			for (const item of data.items) {
-				await Delete({database, key: item.key})
-				counter++
-				console.log(`Deleted items ${counter}/${data.items.length}`)
-			}
-			console.log(`Succesfuly turncated the database "${database}"!`)
+
+			await reduceAsync(
+				data.items,
+				async (item, counter, acc) => {
+					await detaApi.delete({database, key: item.key})
+					console.log(`Deleted items ${counter + 1}/${data.items.length}`)
+				},
+				[]
+			)
+
+			console.log(`Succesfuly turncated the database "${database}".`)
 			console.log(`Process took ${timer()} seconds.`)
 		} catch (err) {
 			console.log(err)
@@ -245,9 +250,10 @@ program
 	.option("-q, --query <query>", "Specify a query.")
 	.option("-j, --json", "Print JSON instead of a table.")
 	.action(async (database, options) => {
+		auth.checkAuth()
 		console.log("Processing the query...")
 		const timer = benchmark()
-		const data = await Query({database, ...options})
+		const data = await detaApi.query({database, ...options})
 		data.paging.size && options.json
 			? console.log(jsonStringify(data.items))
 			: printTable(data.items)
@@ -261,7 +267,27 @@ program
 	.argument("[key]", "(Optional) The key of an item to be removed.")
 	.option("-q, --query <query>", "Specify a query to be deleted.")
 	.action((key, options, command) => {
+		auth.checkAuth()
 		console.log(key, options)
+	})
+
+program
+	.command("get")
+	.description(
+		`Get an item with the given key. Use "detabase query <query>" in order to be able to specify a query.`
+	)
+	.argument("<database>", "Name of your database.")
+	.argument("<key>", "The key of a record.")
+	.action(async (database, key) => {
+		auth.checkAuth()
+		try {
+			console.log(await detaApi.get({database, key}))
+		} catch (err) {
+			if (err?.response.status === 404) {
+				return console.error("Record with the provided key does not exist.")
+			}
+			console.error(err)
+		}
 	})
 
 program
@@ -269,13 +295,12 @@ program
 	.description("Saves user's project key.")
 	.argument("<project-key>", "Your Deta project key.")
 	.action(projectKey => {
-		if (!projectKey.includes("_")) {
-			return console.log(
-				'Error: Wrong project key. The project key must include an underscore "_"'
-			)
-		}
-		fs.writeFileSync(configFilePath, jsonStringify({projectKey}))
+		auth.auth(projectKey)
 		console.log("Succesfuly authorized!")
 	})
 
-program.parse()
+try {
+	program.parse()
+} catch (err) {
+	console.error(err.name, err.message)
+}
