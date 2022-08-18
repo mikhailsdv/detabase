@@ -4,14 +4,15 @@
 
 ## Use Cases
 
--   Query, get, put, insert, delete, update items.
--   Export databases with or without a specific query.
--   Print databases in the table or json view.
--   Put or insert data from command line or from file.
--   Delete or update multiple items with a query.
--   Truncate databases.
--   Create empty databases.
--   Count items in database.
+- Query, get, put, insert, delete, update items.
+- Export databases with or without a specific query.
+- Print databases in the table or json view.
+- Put or insert data from command line or from file.
+- Clone databases with or without a specific query.
+- Delete or update multiple items with a query.
+- Truncate databases.
+- Create empty databases.
+- Count items in database.
 
 ## Usage
 
@@ -58,17 +59,17 @@ From now, you can run any command. Note that this project uses Deta's syntax for
 
 ## Available commands
 
--   [export](#export)
--   [insert](#insert)
--   [put](#put)
--   [delete](#delete)
--   [update](#update)
--   [query](#query)
--   [create](#create)
--   [clone](#clone)
--   [get](#get)
--   [truncate](#truncate)
--   [count](#count)
+- [export](#export)
+- [insert](#insert)
+- [put](#put)
+- [delete](#delete)
+- [update](#update)
+- [query](#query)
+- [create](#create)
+- [clone](#clone)
+- [get](#get)
+- [truncate](#truncate)
+- [count](#count)
 
 ## export
 
