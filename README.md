@@ -91,7 +91,7 @@ detabase export users -q "{age: 25}"
 
 # Export only users whose age is greater than 18
 # and save the file in the specific path
-detabase export users -q "{'age?gt': 18}" -
+detabase export users -q "{'age?gt': 18}" -fn ../folder/export.json
 ```
 
 ## insert
