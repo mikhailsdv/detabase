@@ -1,7 +1,7 @@
 {
   "name": "@mikhailsdv/detabase",
   "programName": "detabase",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "CLI for Deta Base.",
   "main": "./lib/program.js",
   "bin": {
